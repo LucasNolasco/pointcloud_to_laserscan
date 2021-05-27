@@ -50,6 +50,7 @@
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/message_filter.h>
 #include <tf2_ros/transform_listener.h>
+#include <tf/transform_listener.h>
 
 namespace pointcloud_to_laserscan
 {
@@ -90,6 +91,8 @@ private:
   double min_height_, max_height_, angle_min_, angle_max_, angle_increment_, scan_time_, range_min_, range_max_;
   bool use_inf_;
   double inf_epsilon_;
+
+  tf::TransformListener listener;
 };
 
 }  // namespace pointcloud_to_laserscan

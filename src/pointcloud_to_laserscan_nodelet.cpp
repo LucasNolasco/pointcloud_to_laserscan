@@ -45,6 +45,7 @@
 #include <sensor_msgs/point_cloud2_iterator.h>
 #include <string>
 #include <tf2_sensor_msgs/tf2_sensor_msgs.h>
+#include <geometry_msgs/PointStamped.h>
 
 namespace pointcloud_to_laserscan
 {
@@ -194,6 +195,33 @@ void PointCloudToLaserScanNodelet::cloudCb(const sensor_msgs::PointCloud2ConstPt
   {
     cloud_out = cloud_msg;
   }
+
+  // try {
+  //   geometry_msgs::PoseStamped base_link_origin, pose_stamped;
+  //   base_link_origin.header.stamp = ros::Time(0);
+  //   base_link_origin.header.frame_id = "base_link";
+  //   base_link_origin.pose.position.x = 0;
+  //   base_link_origin.pose.position.y = 0;
+  //   base_link_origin.pose.position.z = 0;
+
+  //   base_link_origin.pose.orientation.x = 0;
+  //   base_link_origin.pose.orientation.y = 0;
+  //   base_link_origin.pose.orientation.z = 0;
+  //   base_link_origin.pose.orientation.w = 1;
+
+  //   const std::string target_frame = "map";
+  //   listener.transformPose(target_frame, base_link_origin, pose_stamped);
+
+  //   tf::Quaternion quat;
+  //   tf::quaternionMsgToTF(pose_stamped.pose.orientation, quat);
+  //   double roll, pitch, yaw;
+  //   tf::Matrix3x3(quat).getRPY(roll, pitch, yaw);
+
+  //   ROS_INFO_STREAM("Pitch: " << pitch);
+  // }
+  // catch (...) {
+  //   ROS_INFO("Failed to calculate pitch");
+  // }
 
   // Iterate through pointcloud
   for (sensor_msgs::PointCloud2ConstIterator<float> iter_x(*cloud_out, "x"), iter_y(*cloud_out, "y"),
