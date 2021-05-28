@@ -46,6 +46,7 @@
 #include <nodelet/nodelet.h>
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
+#include <sensor_msgs/Imu.h>
 #include <string>
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/message_filter.h>
@@ -63,6 +64,7 @@ class PointCloudToLaserScanNodelet : public nodelet::Nodelet
 {
 public:
   PointCloudToLaserScanNodelet();
+  void imuCallback(const sensor_msgs::Imu::ConstPtr& msg);
 
 private:
   virtual void onInit();
@@ -93,6 +95,9 @@ private:
   double inf_epsilon_;
 
   tf::TransformListener listener;
+  ros::Subscriber imu_sub;
+
+  double pitch;
 };
 
 }  // namespace pointcloud_to_laserscan

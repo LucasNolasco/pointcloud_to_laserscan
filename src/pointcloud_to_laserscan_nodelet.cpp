@@ -111,6 +111,17 @@ void PointCloudToLaserScanNodelet::onInit()
 
   pub_ = nh_.advertise<sensor_msgs::LaserScan>("scan", 10, boost::bind(&PointCloudToLaserScanNodelet::connectCb, this),
                                                boost::bind(&PointCloudToLaserScanNodelet::disconnectCb, this));
+
+  imu_sub = nh_.subscribe("/imu/data", 1, &PointCloudToLaserScanNodelet::imuCallback, this);
+}
+
+void PointCloudToLaserScanNodelet::imuCallback(const sensor_msgs::Imu::ConstPtr& msg) {
+  tf::Quaternion quat;
+  tf::quaternionMsgToTF(msg.get()->orientation, quat);
+  double temp_roll, temp_yaw;
+  tf::Matrix3x3(quat).getRPY(temp_roll, pitch, temp_yaw);
+
+  ROS_INFO_STREAM("Pitch: " << pitch);
 }
 
 void PointCloudToLaserScanNodelet::connectCb()
@@ -209,8 +220,7 @@ void PointCloudToLaserScanNodelet::cloudCb(const sensor_msgs::PointCloud2ConstPt
   //   base_link_origin.pose.orientation.z = 0;
   //   base_link_origin.pose.orientation.w = 1;
 
-  //   const std::string target_frame = "map";
-  //   listener.transformPose(target_frame, base_link_origin, pose_stamped);
+  //   listener.transformPose("map", base_link_origin, pose_stamped);
 
   //   tf::Quaternion quat;
   //   tf::quaternionMsgToTF(pose_stamped.pose.orientation, quat);
@@ -224,6 +234,9 @@ void PointCloudToLaserScanNodelet::cloudCb(const sensor_msgs::PointCloud2ConstPt
   // }
 
   // Iterate through pointcloud
+  float pitch_copy = pitch;
+  float pitch_cos = cos(pitch_copy);
+  float pitch_sin = sin(pitch_copy);
   for (sensor_msgs::PointCloud2ConstIterator<float> iter_x(*cloud_out, "x"), iter_y(*cloud_out, "y"),
        iter_z(*cloud_out, "z");
        iter_x != iter_x.end(); ++iter_x, ++iter_y, ++iter_z)
@@ -237,6 +250,12 @@ void PointCloudToLaserScanNodelet::cloudCb(const sensor_msgs::PointCloud2ConstPt
     if (*iter_z > max_height_ || *iter_z < min_height_)
     {
       NODELET_DEBUG("rejected for height %f not in range (%f, %f)\n", *iter_z, min_height_, max_height_);
+      continue;
+    }
+
+    float rotated_z = - pitch_sin * (*iter_x) + pitch_cos * (*iter_z);
+    if (rotated_z > max_height_ || rotated_z < min_height_) {
+      ROS_INFO("Measure Z: %f, Corrected Z: %f", *iter_z, rotated_z);
       continue;
     }
 
