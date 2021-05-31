@@ -1,6 +1,6 @@
-# ROS 2 pointcloud <-> laserscan converters
+# ROS pointcloud <-> laserscan converters
 
-Fork from [ros-perception/pointcloud_to_laserscan](https://github.com/ros-perception/pointcloud_to_laserscan). This fork adds a feature for correcting the pointcloud height based on IMU data, which allows undesired points to be discarded even if the robot inclinated. This package provides components to convert `sensor_msgs/PointCloud2` messages to `sensor_msgs/LaserScan` messages and back.
+Fork from [ros-perception/pointcloud_to_laserscan](https://github.com/ros-perception/pointcloud_to_laserscan). This fork adds a feature for correcting the pointcloud height based on IMU data, which allows undesired points to be discarded even if the robot is inclinated. This package provides components to convert `sensor_msgs/PointCloud2` messages to `sensor_msgs/LaserScan` messages and back.
 
 ## pointcloud\_to\_laserscan::PointCloudToLaserScanNode
 
