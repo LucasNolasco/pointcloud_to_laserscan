@@ -113,15 +113,16 @@ void PointCloudToLaserScanNodelet::onInit()
                                                boost::bind(&PointCloudToLaserScanNodelet::disconnectCb, this));
 
   imu_sub = nh_.subscribe("/imu/data", 1, &PointCloudToLaserScanNodelet::imuCallback, this);
+  pitch_ = 0;
 }
 
 void PointCloudToLaserScanNodelet::imuCallback(const sensor_msgs::Imu::ConstPtr& msg) {
-  tf::Quaternion quat;
-  tf::quaternionMsgToTF(msg.get()->orientation, quat);
-  double temp_roll, temp_yaw;
-  tf::Matrix3x3(quat).getRPY(temp_roll, pitch, temp_yaw);
+  tf2::Quaternion quat;
+  tf2::convert(msg.get()->orientation, quat);
+  tf2Scalar temp_roll, temp_yaw;
+  tf2::Matrix3x3(quat).getRPY(temp_roll, pitch_, temp_yaw);
 
-  ROS_INFO_STREAM("Pitch: " << pitch);
+  ROS_INFO_STREAM("Pitch: " << pitch_);
 }
 
 void PointCloudToLaserScanNodelet::connectCb()
@@ -207,34 +208,8 @@ void PointCloudToLaserScanNodelet::cloudCb(const sensor_msgs::PointCloud2ConstPt
     cloud_out = cloud_msg;
   }
 
-  // try {
-  //   geometry_msgs::PoseStamped base_link_origin, pose_stamped;
-  //   base_link_origin.header.stamp = ros::Time(0);
-  //   base_link_origin.header.frame_id = "base_link";
-  //   base_link_origin.pose.position.x = 0;
-  //   base_link_origin.pose.position.y = 0;
-  //   base_link_origin.pose.position.z = 0;
-
-  //   base_link_origin.pose.orientation.x = 0;
-  //   base_link_origin.pose.orientation.y = 0;
-  //   base_link_origin.pose.orientation.z = 0;
-  //   base_link_origin.pose.orientation.w = 1;
-
-  //   listener.transformPose("map", base_link_origin, pose_stamped);
-
-  //   tf::Quaternion quat;
-  //   tf::quaternionMsgToTF(pose_stamped.pose.orientation, quat);
-  //   double roll, pitch, yaw;
-  //   tf::Matrix3x3(quat).getRPY(roll, pitch, yaw);
-
-  //   ROS_INFO_STREAM("Pitch: " << pitch);
-  // }
-  // catch (...) {
-  //   ROS_INFO("Failed to calculate pitch");
-  // }
-
   // Iterate through pointcloud
-  float pitch_copy = pitch;
+  float pitch_copy = static_cast<float>(pitch_);
   float pitch_cos = cos(pitch_copy);
   float pitch_sin = sin(pitch_copy);
   for (sensor_msgs::PointCloud2ConstIterator<float> iter_x(*cloud_out, "x"), iter_y(*cloud_out, "y"),
@@ -253,9 +228,9 @@ void PointCloudToLaserScanNodelet::cloudCb(const sensor_msgs::PointCloud2ConstPt
       continue;
     }
 
-    float rotated_z = - pitch_sin * (*iter_x) + pitch_cos * (*iter_z);
+    float rotated_z = pitch_cos * (*iter_z) - pitch_sin * (*iter_x);
     if (rotated_z > max_height_ || rotated_z < min_height_) {
-      ROS_INFO("Measure Z: %f, Corrected Z: %f", *iter_z, rotated_z);
+      ROS_INFO("Measured Z: %f, Rotated Z: %f", *iter_z, rotated_z);
       continue;
     }
 

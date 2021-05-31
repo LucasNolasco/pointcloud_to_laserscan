@@ -51,7 +51,8 @@
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/message_filter.h>
 #include <tf2_ros/transform_listener.h>
-#include <tf/transform_listener.h>
+#include <tf2/LinearMath/Matrix3x3.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
 namespace pointcloud_to_laserscan
 {
@@ -64,7 +65,6 @@ class PointCloudToLaserScanNodelet : public nodelet::Nodelet
 {
 public:
   PointCloudToLaserScanNodelet();
-  void imuCallback(const sensor_msgs::Imu::ConstPtr& msg);
 
 private:
   virtual void onInit();
@@ -77,6 +77,9 @@ private:
 
   void disconnectCb();
 
+  void imuCallback(const sensor_msgs::Imu::ConstPtr& msg);
+
+
   ros::NodeHandle nh_, private_nh_;
   ros::Publisher pub_;
   boost::mutex connect_mutex_;
@@ -86,6 +89,9 @@ private:
   message_filters::Subscriber<sensor_msgs::PointCloud2> sub_;
   boost::shared_ptr<MessageFilter> message_filter_;
 
+  tf2Scalar pitch_;
+  ros::Subscriber imu_sub;
+
   // ROS Parameters
   unsigned int input_queue_size_;
   std::string target_frame_;
@@ -93,11 +99,6 @@ private:
   double min_height_, max_height_, angle_min_, angle_max_, angle_increment_, scan_time_, range_min_, range_max_;
   bool use_inf_;
   double inf_epsilon_;
-
-  tf::TransformListener listener;
-  ros::Subscriber imu_sub;
-
-  double pitch;
 };
 
 }  // namespace pointcloud_to_laserscan
