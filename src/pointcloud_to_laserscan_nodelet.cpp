@@ -112,17 +112,83 @@ void PointCloudToLaserScanNodelet::onInit()
   pub_ = nh_.advertise<sensor_msgs::LaserScan>("scan", 10, boost::bind(&PointCloudToLaserScanNodelet::connectCb, this),
                                                boost::bind(&PointCloudToLaserScanNodelet::disconnectCb, this));
 
-  imu_sub = nh_.subscribe("/imu/data", 1, &PointCloudToLaserScanNodelet::imuCallback, this);
+  imu_sub = nh_.subscribe("/imu/data", 10, &PointCloudToLaserScanNodelet::imuCallback, this);
+  tf2_.reset(new tf2_ros::Buffer());
+  tf2_listener_.reset(new tf2_ros::TransformListener(*tf2_));
+  // pose_filter_.reset(new tf2_ros::MessageFilter<sensor_msgs::Imu>(imu_sub, *tf2_, "base_link", input_queue_size_, nh_));
+  // pose_filter_->registerCallback(boost::bind(&PointCloudToLaserScanNodelet::imuCallback, this, _1));
+
   pitch_ = 0;
+  // imu_mutex.lock();
+
+  valid_imu.store(false);
 }
 
 void PointCloudToLaserScanNodelet::imuCallback(const sensor_msgs::Imu::ConstPtr& msg) {
-  tf2::Quaternion quat;
-  tf2::convert(msg.get()->orientation, quat);
-  tf2Scalar temp_roll, temp_yaw;
-  tf2::Matrix3x3(quat).getRPY(temp_roll, pitch_, temp_yaw);
+  // tf2::Quaternion quat;
+  // tf2::convert(msg.get()->orientation, quat);
+  // tf2Scalar temp_roll, temp_pitch, temp_yaw;
+  // tf2::Matrix3x3(quat).getRPY(temp_roll, temp_pitch, temp_yaw);
 
-  ROS_INFO_STREAM("Pitch: " << pitch_);
+  // ROS_INFO("Pitch: %g", pitch_);
+  
+  // pitch_ = - (M_PI_2 + atan2(msg.get()->linear_acceleration.z, msg.get()->linear_acceleration.x));
+  // ROS_INFO("Pitch: %g, z: %g, x: %g", pitch_, msg.get()->linear_acceleration.z, msg.get()->linear_acceleration.x);
+
+  // geometry_msgs::Quaternion orientation;
+  // StatelessOrientation::computeOrientation(msg.get()->linear_acceleration, orientation);
+  
+  // tf2Scalar temp_roll, temp_pitch, temp_yaw;
+  // tf2::Quaternion quat;
+  // tf2::fromMsg(orientation, quat);
+  // tf2::Matrix3x3(quat).getRPY(temp_roll, temp_pitch, temp_yaw);
+
+  // if (temp_roll > 0) {
+  //   pitch_ = - (temp_roll - M_PI);
+  // }
+  // else if (temp_roll < 0) {
+  //   pitch_ = - (temp_roll + M_PI);
+  // }
+
+  // ROS_INFO("Magic pitch: %g, Roll: %g, Pitch: %g, Yaw: %g", pitch_, temp_roll, temp_pitch, temp_yaw);
+
+  geometry_msgs::PoseStamped pose_imu, pose_base_link;
+  pose_imu.header.frame_id = "imu";
+  pose_imu.header.stamp = ros::Time::now();
+  pose_imu.pose.position.x = 0;
+  pose_imu.pose.position.y = 0;
+  pose_imu.pose.position.z = 0;
+  pose_imu.pose.orientation = msg.get()->orientation;
+
+  tf2Scalar temp_roll = 0, temp_pitch = 0, temp_yaw = 0;
+  try {
+    tf2_->transform(pose_imu, pose_base_link, "base_link", ros::Duration(tolerance_));
+
+    tf2::Quaternion quat;
+    tf2::convert(pose_base_link.pose.orientation, quat);
+    tf2::Matrix3x3(quat).getRPY(temp_roll, pitch_, temp_yaw);
+  }
+  catch (tf2::TransformException& ex) {
+    ROS_INFO("Failure %s\n", ex.what()); //Print exception which was caught
+
+    pitch_ = 0;
+  }
+
+  if (temp_roll > 0) {
+    pitch_ = - (temp_roll - M_PI); // + 0.05;
+  }
+  else if (temp_roll < 0) {
+    pitch_ = - (temp_roll + M_PI); // + 0.05;
+  }
+
+  ROS_INFO("Magic pitch: %g, Roll: %g, Pitch: %g, Yaw: %g", pitch_, temp_roll, temp_pitch, temp_yaw);
+  ROS_INFO_STREAM("Timestamp: " << msg.get()->header.stamp);
+
+  valid_imu.store(true);
+
+  imu_stamp = msg.get()->header.stamp;
+
+  // imu_mutex.unlock();
 }
 
 void PointCloudToLaserScanNodelet::connectCb()
@@ -208,14 +274,32 @@ void PointCloudToLaserScanNodelet::cloudCb(const sensor_msgs::PointCloud2ConstPt
     cloud_out = cloud_msg;
   }
 
+  // ros::Duration wait_time(0.05);
+  // while(!imu_mutex.try_lock()) {
+  //   wait_time.sleep();
+  // }
+
   // Iterate through pointcloud
-  float pitch_copy = static_cast<float>(pitch_);
-  float pitch_cos = cos(pitch_copy);
-  float pitch_sin = sin(pitch_copy);
+  // if (fabs(imu_stamp.toSec() - cloud_msg->header.stamp.toSec()) < 0.05) {
+  ROS_INFO_STREAM("======= NEW CLOUD, timestamp: " << cloud_msg->header.stamp << " =======");
+  // float pitch_copy;
+  // if (pitch_ > 0) {
+  //   pitch_copy = static_cast<float>(sqrt(pitch_));
+  // }
+  // else {
+  //   pitch_copy = static_cast<float>(-sqrt(-1 * pitch_));
+  // }
+
+  // float pitch_copy = static_cast<float>(sqrt(fabs(pitch_)));
+
+  // float pitch_cos = cos(pitch_copy);
+  // float pitch_sin = sin(pitch_copy);
+  if (sqrt(fabs(pitch_)) < 0.1) {
   for (sensor_msgs::PointCloud2ConstIterator<float> iter_x(*cloud_out, "x"), iter_y(*cloud_out, "y"),
        iter_z(*cloud_out, "z");
        iter_x != iter_x.end(); ++iter_x, ++iter_y, ++iter_z)
   {
+    valid_imu.store(false);
     if (std::isnan(*iter_x) || std::isnan(*iter_y) || std::isnan(*iter_z))
     {
       NODELET_DEBUG("rejected for nan in point(%f, %f, %f)\n", *iter_x, *iter_y, *iter_z);
@@ -228,11 +312,25 @@ void PointCloudToLaserScanNodelet::cloudCb(const sensor_msgs::PointCloud2ConstPt
       continue;
     }
 
-    float rotated_z = pitch_cos * (*iter_z) - pitch_sin * (*iter_x);
-    if (rotated_z > max_height_ || rotated_z < min_height_) {
-      ROS_INFO("Measured Z: %f, Rotated Z: %f", *iter_z, rotated_z);
-      continue;
-    }
+    // float pitch_copy = static_cast<float>(pitch_);
+    // float pitch_cos = cos(pitch_copy);
+    // float pitch_sin = sin(pitch_copy);
+    // float rotated_z = pitch_cos * (*iter_z) - pitch_sin * (*iter_x);
+    // if (rotated_z > max_height_ || rotated_z < min_height_) {
+    //   ROS_INFO("Measured Z: %f, Rotated Z: %f, Rotation: %f", *iter_z, rotated_z, pitch_copy);
+    //   continue;
+    // }
+
+    // if (fabs(pitch_copy) > 0.08) {
+    //   continue;
+    // }
+
+    // float rotated_x = pitch_sin * (*iter_z) + pitch_cos * (*iter_x);
+    // double rotated_range = hypot(rotated_x, *iter_y);
+    // if (rotated_range < range_min_ || rotated_range > range_max_) {
+    //   ROS_INFO("Rotated range exceeded");
+    //   continue;
+    // }
 
     double range = hypot(*iter_x, *iter_y);
     if (range < range_min_)
@@ -261,6 +359,7 @@ void PointCloudToLaserScanNodelet::cloudCb(const sensor_msgs::PointCloud2ConstPt
     {
       output.ranges[index] = range;
     }
+  }
   }
   pub_.publish(output);
 }

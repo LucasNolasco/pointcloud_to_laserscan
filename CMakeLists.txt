@@ -29,7 +29,7 @@ target_link_libraries(laserscan_to_pointcloud ${catkin_LIBRARIES})
 add_executable(laserscan_to_pointcloud_node src/laserscan_to_pointcloud_node.cpp)
 target_link_libraries(laserscan_to_pointcloud_node laserscan_to_pointcloud ${catkin_LIBRARIES})
 
-add_library(pointcloud_to_laserscan src/pointcloud_to_laserscan_nodelet.cpp)
+add_library(pointcloud_to_laserscan src/pointcloud_to_laserscan_nodelet.cpp src/stateless_orientation.cpp)
 target_link_libraries(pointcloud_to_laserscan ${catkin_LIBRARIES})
 
 add_executable(pointcloud_to_laserscan_node src/pointcloud_to_laserscan_node.cpp)
