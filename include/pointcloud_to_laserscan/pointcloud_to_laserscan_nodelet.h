@@ -55,6 +55,8 @@
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <mutex>
 #include "stateless_orientation.h"
+#include <Eigen/Eigen>
+#include <Eigen/Geometry>
 
 namespace pointcloud_to_laserscan
 {
