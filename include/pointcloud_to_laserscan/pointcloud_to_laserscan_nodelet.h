@@ -92,19 +92,12 @@ private:
   boost::shared_ptr<tf2_ros::TransformListener> tf2_listener_;
   message_filters::Subscriber<sensor_msgs::PointCloud2> sub_;
   boost::shared_ptr<MessageFilter> message_filter_;
-  // boost::shared_ptr<tf2_ros::MessageFilter<sensor_msgs::Imu>> pose_filter_;
 
   tf2Scalar pitch_;
   ros::Subscriber imu_sub;
-  // message_filters::Subscriber<sensor_msgs::Imu> imu_sub;
-
-  std::atomic<bool> valid_imu;
-  ros::Time imu_stamp;
-  double lidar_height;
-  std::deque<float> imu_bias;
-  float bias_sum;
-
-  // std::mutex imu_mutex;
+  double lidar_height, imu_offset;
+  std::string lidar_frame, base_link_frame;
+  bool right_handed;
 
   // ROS Parameters
   unsigned int input_queue_size_;

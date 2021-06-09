@@ -30,6 +30,8 @@ This component projects `sensor_msgs/PointCloud2` messages into `sensor_msgs/Las
 * `target_frame` (str, default: none) - If provided, transform the pointcloud into this frame before converting to a laser scan. Otherwise, laser scan will be generated in the same frame as the input point cloud.
 * `transform_tolerance` (double, default: 0.01) - Time tolerance for transform lookups. Only used if a `target_frame` is provided.
 * `use_inf` (boolean, default: true) - If disabled, report infinite range (no obstacle) as range_max + 1. Otherwise report infinite range as +inf.
+* `right_handed`(boolean, default: true) - Indicates if the IMU is placed upside down to achieve a right handed inclination workflow.
+* `imu_offset` (double, default: 0.0) - Approx. IMU pitch error.
 
 ## pointcloud\_to\_laserscan::LaserScanToPointCloudNode
 
