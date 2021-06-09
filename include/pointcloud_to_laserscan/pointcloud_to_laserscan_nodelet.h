@@ -100,6 +100,9 @@ private:
 
   std::atomic<bool> valid_imu;
   ros::Time imu_stamp;
+  double lidar_height;
+  std::deque<float> imu_bias;
+  float bias_sum;
 
   // std::mutex imu_mutex;
 
