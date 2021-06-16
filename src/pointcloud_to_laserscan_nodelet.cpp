@@ -77,7 +77,7 @@ void PointCloudToLaserScanNodelet::onInit()
 
   private_nh_.param<std::string>("base_link_frame", base_link_frame, "base_link");
   private_nh_.param<std::string>("lidar_frame", lidar_frame, "rslidar");
-  private_nh_.param<bool>("right_handed", right_handed, true);
+  private_nh_.param<bool>("imu_around_pi", imu_around_pi, false);
   private_nh_.param<double>("imu_offset", imu_offset, 0.0);
 
   // Check if explicitly single threaded, otherwise, let nodelet manager dictate thread pool size
@@ -161,7 +161,7 @@ void PointCloudToLaserScanNodelet::imuCallback(const sensor_msgs::Imu::ConstPtr&
     pitch_ = 0;
   }
 
-  if (right_handed) {
+  if (imu_around_pi) {
     if (base_link_pitch > 0) {
       pitch_ = (base_link_pitch - M_PI);
     }
@@ -173,7 +173,7 @@ void PointCloudToLaserScanNodelet::imuCallback(const sensor_msgs::Imu::ConstPtr&
     }
   }
   else {
-    pitch_ = -base_link_pitch;
+    pitch_ = base_link_pitch;
   }
 
   pitch_ += imu_offset;

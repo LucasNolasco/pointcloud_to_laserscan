@@ -97,7 +97,7 @@ private:
   ros::Subscriber imu_sub;
   double lidar_height, imu_offset;
   std::string lidar_frame, base_link_frame;
-  bool right_handed;
+  bool imu_around_pi;
 
   // ROS Parameters
   unsigned int input_queue_size_;
